@@ -52,6 +52,8 @@ def aqi_rating(aqi):
 
 # TODO config file
 aqicn_city, aqicn_token = 'california/coast-and-central-bay/san-francisco', 'TOKEN'
+airnow_zip, airnow_token = '94016', 'TOKEN'
+
 
 # https://aqicn.org support
 url = 'https://api.waqi.info/feed/' + aqicn_city + '/?token=' + aqicn_token  # FIXME use a template
@@ -71,9 +73,33 @@ try:
 except Exception as error:
     print(error)
 
+
+# AirNow / airnowapi.org - US EPA
+url = 'http://www.airnowapi.org/aq/observation/zipCode/current/?format=application/json&zipCode=' + airnow_zip + '&distance=25&API_KEY=' + airnow_token
+print(url)
+try:
+    data = get_json(url)
+    #print(json.dumps(data, indent=4, sort_keys=True))
+    for result in data:
+        if result['ParameterName'] == 'PM2.5':
+            aqis['airnow'] = result['AQI']
+            # reading_timestamp = '%s%d:00:00' % (result['DateObserved'], result['HourObserved'],)
+            #reading_timestamp = '%s%d:00:00 %s' % (result['DateObserved'], result['HourObserved'], result['LocalTimeZone'], )
+            #print(reading_timestamp)
+except Exception as error:
+    print('AirNow exception')
+    print(error)
+
+max_aqi = -1
 for aqi_source in aqis:
     print(aqi_source)
     aqi = aqis[aqi_source]
+    max_aqi = max(max_aqi, aqi)
     print(aqi)
     level_info = aqi_rating(aqi)
     print(level_info)
+
+print('')
+print(max_aqi)
+level_info = aqi_rating(max_aqi)
+print(level_info)

@@ -7,5 +7,9 @@ TODO
 
   * https://aqicn.org
   * PurpleAir
-  * IQair  / AirNow
+      * https://www2.purpleair.com/community/faq#!hc-access-the-json
+      * https://www.purpleair.com/sensorlist
+      * https://docs.google.com/document/d/15ijz94dXJ-YAZLi9iZ_RaBwrZ4KtYeCy08goGBwnbCU/edit?usp=sharing
+  * IQair / AirNow
+      * https://www.airnow.gov/ https://docs.airnowapi.org/
   * Alert/notification support
