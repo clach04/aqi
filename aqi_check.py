@@ -71,18 +71,18 @@ if config['mqtt']:
     import paho.mqtt.publish as publish  # pip install paho-mqtt
 
 
-# https://aqicn.org support
-url = 'https://api.waqi.info/feed/' + aqicn_city + '/?token=' + aqicn_token  # FIXME use a template
-#print(url)
-# NOTE got bad gateway on API site
-#url = 'https://api.waqi.info/feed/california/coast-and-central-bay/san-francisco/?token=TOKEN_HERE'
-# but https://aqicn.org/california/coast-and-central-bay/san-francisco/ was still up and scrape-able  
 
 last_state = aqi_levels[0][2]
 
 while 1:
     aqis = {}
 
+    # https://aqicn.org support
+    url = 'https://api.waqi.info/feed/' + aqicn_city + '/?token=' + aqicn_token  # FIXME use a template
+    #print(url)
+    # NOTE got bad gateway on API site
+    #url = 'https://api.waqi.info/feed/california/coast-and-central-bay/san-francisco/?token=TOKEN_HERE'
+    # but https://aqicn.org/california/coast-and-central-bay/san-francisco/ was still up and scrape-able
     try:
         data = get_json(url)
         aqis['aqicn'] = data['data']['aqi']
