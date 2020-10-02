@@ -53,6 +53,38 @@ def aqi_rating(aqi):
             return level
     return aqi_levels[-1]  # catch any case not covered by the check, so too small or too large
 
+def my_ugm3_to_us_epa_aqi(pm25):
+    # modified constants, Slide 11 https://www.epa.gov/sites/production/files/2014-05/documents/zell-aqi.pdf
+    # ug/m3         US EPA       AQI Category
+    pm1 = 0;         aqi1 = 0;    # Good
+    pm2 = 12;        aqi2 = 50;   # Moderate
+    pm3 = 35.4;      aqi3 = 100;  # USG
+    pm4 = 55.4;      aqi4 = 150;  # Unhealthy
+    pm5 = 150.4;     aqi5 = 200;  # Very Unhealthy
+    pm6 = 250.4;     aqi6 = 300;  # Hazardous
+    pm7 = 350.4;     aqi7 = 400;
+    pm8 = 500.4;     aqi8 = 500;
+
+    aqipm25 = 0
+    pm25 = float(pm25)
+
+    if (pm25 >= pm1 and pm25 <= pm2):
+        aqipm25 = ((aqi2 - aqi1) / (pm2 - pm1)) * (pm25 - pm1) + aqi1
+    elif (pm25 >= pm2 and pm25 <= pm3):
+        aqipm25 = ((aqi3 - aqi2) / (pm3 - pm2)) * (pm25 - pm2) + aqi2
+    elif (pm25 >= pm3 and pm25 <= pm4):
+        aqipm25 = ((aqi4 - aqi3) / (pm4 - pm3)) * (pm25 - pm3) + aqi3
+    elif (pm25 >= pm4 and pm25 <= pm5):
+        aqipm25 = ((aqi5 - aqi4) / (pm5 - pm4)) * (pm25 - pm4) + aqi4
+    elif (pm25 >= pm5 and pm25 <= pm6):
+        aqipm25 = ((aqi6 - aqi5) / (pm6 - pm5)) * (pm25 - pm5) + aqi5
+    elif (pm25 >= pm6 and pm25 <= pm7):
+        aqipm25 = ((aqi7 - aqi6) / (pm7 - pm6)) * (pm25 - pm6) + aqi6
+    elif (pm25 >= pm7 and pm25 <= pm8):
+        aqipm25 = ((aqi8 - aqi7) / (pm8 - pm7)) * (pm25 - pm7) + aqi7
+
+    return aqipm25
+
 
 # TODO config file
 config = {
@@ -66,6 +98,8 @@ config = {
 }
 aqicn_city, aqicn_token = 'california/coast-and-central-bay/san-francisco', 'TOKEN'
 airnow_zip, airnow_token = '94016', 'TOKEN'
+# PurpleAir - no API key needed
+purple_sensors = ('62421', '68885')  # note strings, not integers
 
 if config['mqtt']:
     import paho.mqtt.publish as publish  # pip install paho-mqtt
@@ -108,6 +142,47 @@ while 1:
     except Exception as error:
         print('AirNow exception')
         print(error)
+
+    # PurpleAir - no API key needed
+    url = 'https://www.purpleair.com/json?show=' + '|'.join(purple_sensors)
+    print(url)
+    try:
+        data = get_json(url)
+        #print(json.dumps(data, indent=4, sort_keys=True))
+        for sensor in data['results']:
+            """
+            #print(sensor['DEVICE_LOCATIONTYPE'])  # NOT always available
+            print(sensor['ID'])
+            print(sensor['Label'])
+            print(sensor.get('DEVICE_LOCATIONTYPE'))  # NOT always available; assume indoors if None/missing?
+            print(sensor['LastSeen'])
+            print(time.ctime(sensor['LastSeen']))  # TODO ISO format
+            print(sensor['p_2_5_um'])  # this needs conversion
+            print(sensor['pm2_5_atm'])  # this needs conversion
+            print(sensor['pm2_5_cf_1'])  # this needs conversion (same as above)
+            print(sensor['pm1_0_atm'])  # this needs conversion
+            print(sensor['pm10_0_cf_1'])  # this needs conversion (same as above)
+            print(sensor['Lat'])
+            print(sensor['Lon'])
+            """
+
+            """
+            result = aqi_conversion.to_iaqi(aqi_conversion.POLLUTANT_PM25, sensor['pm2_5_atm'], algo=aqi_conversion.ALGO_EPA)
+            print('')
+            print(result)
+            result = aqi_conversion.to_aqi([
+                (aqi_conversion.POLLUTANT_PM25, sensor['p_2_5_um']),
+                (aqi_conversion.POLLUTANT_PM10, sensor['pm1_0_atm']),
+            ])
+            print(result)
+            """
+            #print(my_ugm3_to_us_epa_aqi(sensor['p_2_5_um']))
+            aqis['purpleair_' + sensor['Label']] = my_ugm3_to_us_epa_aqi(sensor['p_2_5_um'])
+            #print('')
+    except Exception as error:
+        print('PurpleAir exception')
+        print(error)
+
 
     max_aqi = -1
     for aqi_source in aqis:
