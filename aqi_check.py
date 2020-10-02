@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
+import datetime
 import os
 import sys
+import time
 
 try:
     # Assume Python 3.x
@@ -53,8 +55,20 @@ def aqi_rating(aqi):
 
 
 # TODO config file
+config = {
+    'mqtt': {
+        'mqtt_broker': 'localhost',
+        'mqtt_port': 1883,
+        'mqtt_topic': 'aqi',
+    },
+    'aqi_sources': {},  # TODO
+    'sleep_period': 30 * 60,   # 30 mins, expressed in seconds
+}
 aqicn_city, aqicn_token = 'california/coast-and-central-bay/san-francisco', 'TOKEN'
 airnow_zip, airnow_token = '94016', 'TOKEN'
+
+if config['mqtt']:
+    import paho.mqtt.publish as publish  # pip install paho-mqtt
 
 
 # https://aqicn.org support
@@ -64,44 +78,71 @@ url = 'https://api.waqi.info/feed/' + aqicn_city + '/?token=' + aqicn_token  # F
 #url = 'https://api.waqi.info/feed/california/coast-and-central-bay/san-francisco/?token=TOKEN_HERE'
 # but https://aqicn.org/california/coast-and-central-bay/san-francisco/ was still up and scrape-able  
 
-aqis = {}
+last_state = aqi_levels[0][2]
 
-try:
-    data = get_json(url)
-    aqis['aqicn'] = data['data']['aqi']
-    #print(data['data']['aqi'])
-    #print(data['data']['city']['name'])
-    #print(data['data']['time']['s'] + ' ' + data['data']['time']['tz'])  # reading timestamp
-except Exception as error:
-    print(error)
+while 1:
+    aqis = {}
+
+    try:
+        data = get_json(url)
+        aqis['aqicn'] = data['data']['aqi']
+        #print(data['data']['aqi'])
+        #print(data['data']['city']['name'])
+        #print(data['data']['time']['s'] + ' ' + data['data']['time']['tz'])  # reading timestamp
+    except Exception as error:
+        print(error)
 
 
-# AirNow / airnowapi.org - US EPA
-url = 'http://www.airnowapi.org/aq/observation/zipCode/current/?format=application/json&zipCode=' + airnow_zip + '&distance=25&API_KEY=' + airnow_token
-print(url)
-try:
-    data = get_json(url)
-    #print(json.dumps(data, indent=4, sort_keys=True))
-    for result in data:
-        if result['ParameterName'] == 'PM2.5':
-            aqis['airnow'] = result['AQI']
-            # reading_timestamp = '%s%d:00:00' % (result['DateObserved'], result['HourObserved'],)
-            #reading_timestamp = '%s%d:00:00 %s' % (result['DateObserved'], result['HourObserved'], result['LocalTimeZone'], )
-            #print(reading_timestamp)
-except Exception as error:
-    print('AirNow exception')
-    print(error)
+    # AirNow / airnowapi.org - US EPA
+    url = 'http://www.airnowapi.org/aq/observation/zipCode/current/?format=application/json&zipCode=' + airnow_zip + '&distance=25&API_KEY=' + airnow_token
+    print(url)
+    try:
+        data = get_json(url)
+        #print(json.dumps(data, indent=4, sort_keys=True))
+        for result in data:
+            if result['ParameterName'] == 'PM2.5':
+                aqis['airnow'] = result['AQI']
+                # reading_timestamp = '%s%d:00:00' % (result['DateObserved'], result['HourObserved'],)
+                #reading_timestamp = '%s%d:00:00 %s' % (result['DateObserved'], result['HourObserved'], result['LocalTimeZone'], )
+                #print(reading_timestamp)
+    except Exception as error:
+        print('AirNow exception')
+        print(error)
 
-max_aqi = -1
-for aqi_source in aqis:
-    print(aqi_source)
-    aqi = aqis[aqi_source]
-    max_aqi = max(max_aqi, aqi)
-    print(aqi)
-    level_info = aqi_rating(aqi)
+    max_aqi = -1
+    for aqi_source in aqis:
+        print(aqi_source)
+        print(datetime.datetime.now())
+        aqi = aqis[aqi_source]
+        max_aqi = max(max_aqi, aqi)
+        print(aqi)
+        level_info = aqi_rating(aqi)
+        print(level_info)
+
+    # TODO handle lookup failure, where max_aqi == -1
+    """
+    print('')
+    print(max_aqi)
+    level_info = aqi_rating(max_aqi)
     print(level_info)
+    print(level_info[2])
+    print(last_state)
+    """
 
-print('')
-print(max_aqi)
-level_info = aqi_rating(max_aqi)
-print(level_info)
+    current_state = level_info[2]
+    if last_state != current_state:
+        # notify
+        (0, 50, "Good", "Air quality is considered satisfactory, and air pollution poses little or no risk", "Air quality is considered satisfactory, and air pollution poses little or no risk.", "Green", "009966"),
+        description1, description2 = (level_info[3], level_info[4])  # TODO color
+        message = "AQI %d %s - %s. %s" % (max_aqi, current_state, description1, description2)
+        print('*' * 65)
+        print(message)
+        # TODO catch exceptions and ignore?
+        if config['mqtt']:
+            mqtt_message = message
+            publish.single(config['mqtt']['mqtt_topic'], mqtt_message, hostname=config['mqtt']['mqtt_broker'], port=config['mqtt']['mqtt_port'])
+
+
+    last_state = current_state
+    time.sleep(config['sleep_period'])
+
