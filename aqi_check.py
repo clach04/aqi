@@ -208,7 +208,6 @@ while 1:
     current_state = level_info[2]
     if last_state != current_state:
         # notify
-        (0, 50, "Good", "Air quality is considered satisfactory, and air pollution poses little or no risk", "Air quality is considered satisfactory, and air pollution poses little or no risk.", "Green", "009966"),
         description1, description2 = (level_info[3], level_info[4])  # TODO color
         message = "AQI %d %s - %s. %s" % (max_aqi, current_state, description1, description2)
         print('*' * 65)
