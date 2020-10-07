@@ -193,6 +193,7 @@ while 1:
         print(aqi)
         level_info = aqi_rating(aqi)
         print(level_info)
+    level_info = aqi_rating(max_aqi)
 
     # TODO handle lookup failure, where max_aqi == -1
     """
