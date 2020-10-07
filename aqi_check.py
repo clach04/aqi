@@ -105,119 +105,127 @@ if config['mqtt']:
     import paho.mqtt.publish as publish  # pip install paho-mqtt
 
 
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
 
-last_state = aqi_levels[0][2]
+    last_state = aqi_levels[0][2]
 
-while 1:
-    aqis = {}
+    while 1:
+        aqis = {}
 
-    # https://aqicn.org support
-    url = 'https://api.waqi.info/feed/' + aqicn_city + '/?token=' + aqicn_token  # FIXME use a template
-    #print(url)
-    # NOTE got bad gateway on API site
-    #url = 'https://api.waqi.info/feed/california/coast-and-central-bay/san-francisco/?token=TOKEN_HERE'
-    # but https://aqicn.org/california/coast-and-central-bay/san-francisco/ was still up and scrape-able
-    try:
-        data = get_json(url)
-        aqis['aqicn'] = data['data']['aqi']
-        #print(data['data']['aqi'])
-        #print(data['data']['city']['name'])
-        #print(data['data']['time']['s'] + ' ' + data['data']['time']['tz'])  # reading timestamp
-    except Exception as error:
-        print(error)
-
-
-    # AirNow / airnowapi.org - US EPA
-    url = 'http://www.airnowapi.org/aq/observation/zipCode/current/?format=application/json&zipCode=' + airnow_zip + '&distance=25&API_KEY=' + airnow_token
-    print(url)
-    try:
-        data = get_json(url)
-        #print(json.dumps(data, indent=4, sort_keys=True))
-        for result in data:
-            if result['ParameterName'] == 'PM2.5':
-                aqis['airnow'] = result['AQI']
-                # reading_timestamp = '%s%d:00:00' % (result['DateObserved'], result['HourObserved'],)
-                #reading_timestamp = '%s%d:00:00 %s' % (result['DateObserved'], result['HourObserved'], result['LocalTimeZone'], )
-                #print(reading_timestamp)
-    except Exception as error:
-        print('AirNow exception')
-        print(error)
-
-    # PurpleAir - no API key needed
-    url = 'https://www.purpleair.com/json?show=' + '|'.join(purple_sensors)
-    print(url)
-    try:
-        data = get_json(url)
-        #print(json.dumps(data, indent=4, sort_keys=True))
-        for sensor in data['results']:
-            """
-            #print(sensor['DEVICE_LOCATIONTYPE'])  # NOT always available
-            print(sensor['ID'])
-            print(sensor['Label'])
-            print(sensor.get('DEVICE_LOCATIONTYPE'))  # NOT always available; assume indoors if None/missing?
-            print(sensor['LastSeen'])
-            print(time.ctime(sensor['LastSeen']))  # TODO ISO format
-            print(sensor['p_2_5_um'])  # this needs conversion
-            print(sensor['pm2_5_atm'])  # this needs conversion
-            print(sensor['pm2_5_cf_1'])  # this needs conversion (same as above)
-            print(sensor['pm1_0_atm'])  # this needs conversion
-            print(sensor['pm10_0_cf_1'])  # this needs conversion (same as above)
-            print(sensor['Lat'])
-            print(sensor['Lon'])
-            """
-
-            """
-            result = aqi_conversion.to_iaqi(aqi_conversion.POLLUTANT_PM25, sensor['pm2_5_atm'], algo=aqi_conversion.ALGO_EPA)
-            print('')
-            print(result)
-            result = aqi_conversion.to_aqi([
-                (aqi_conversion.POLLUTANT_PM25, sensor['p_2_5_um']),
-                (aqi_conversion.POLLUTANT_PM10, sensor['pm1_0_atm']),
-            ])
-            print(result)
-            """
-            #print(my_ugm3_to_us_epa_aqi(sensor['p_2_5_um']))
-            aqis['purpleair_' + sensor['Label']] = my_ugm3_to_us_epa_aqi(sensor['p_2_5_um'])
-            #print('')
-    except Exception as error:
-        print('PurpleAir exception')
-        print(error)
+        # https://aqicn.org support
+        url = 'https://api.waqi.info/feed/' + aqicn_city + '/?token=' + aqicn_token  # FIXME use a template
+        #print(url)
+        # NOTE got bad gateway on API site
+        #url = 'https://api.waqi.info/feed/california/coast-and-central-bay/san-francisco/?token=TOKEN_HERE'
+        # but https://aqicn.org/california/coast-and-central-bay/san-francisco/ was still up and scrape-able
+        try:
+            data = get_json(url)
+            aqis['aqicn'] = data['data']['aqi']
+            #print(data['data']['aqi'])
+            #print(data['data']['city']['name'])
+            #print(data['data']['time']['s'] + ' ' + data['data']['time']['tz'])  # reading timestamp
+        except Exception as error:
+            print(error)
 
 
-    max_aqi = -1
-    for aqi_source in aqis:
-        print(aqi_source)
-        print(datetime.datetime.now())
-        aqi = aqis[aqi_source]
-        max_aqi = max(max_aqi, aqi)
-        print(aqi)
-        level_info = aqi_rating(aqi)
+        # AirNow / airnowapi.org - US EPA
+        url = 'http://www.airnowapi.org/aq/observation/zipCode/current/?format=application/json&zipCode=' + airnow_zip + '&distance=25&API_KEY=' + airnow_token
+        print(url)
+        try:
+            data = get_json(url)
+            #print(json.dumps(data, indent=4, sort_keys=True))
+            for result in data:
+                if result['ParameterName'] == 'PM2.5':
+                    aqis['airnow'] = result['AQI']
+                    # reading_timestamp = '%s%d:00:00' % (result['DateObserved'], result['HourObserved'],)
+                    #reading_timestamp = '%s%d:00:00 %s' % (result['DateObserved'], result['HourObserved'], result['LocalTimeZone'], )
+                    #print(reading_timestamp)
+        except Exception as error:
+            print('AirNow exception')
+            print(error)
+
+        # PurpleAir - no API key needed
+        url = 'https://www.purpleair.com/json?show=' + '|'.join(purple_sensors)
+        print(url)
+        try:
+            data = get_json(url)
+            #print(json.dumps(data, indent=4, sort_keys=True))
+            for sensor in data['results']:
+                """
+                #print(sensor['DEVICE_LOCATIONTYPE'])  # NOT always available
+                print(sensor['ID'])
+                print(sensor['Label'])
+                print(sensor.get('DEVICE_LOCATIONTYPE'))  # NOT always available; assume indoors if None/missing?
+                print(sensor['LastSeen'])
+                print(time.ctime(sensor['LastSeen']))  # TODO ISO format
+                print(sensor['p_2_5_um'])  # this needs conversion
+                print(sensor['pm2_5_atm'])  # this needs conversion
+                print(sensor['pm2_5_cf_1'])  # this needs conversion (same as above)
+                print(sensor['pm1_0_atm'])  # this needs conversion
+                print(sensor['pm10_0_cf_1'])  # this needs conversion (same as above)
+                print(sensor['Lat'])
+                print(sensor['Lon'])
+                """
+
+                """
+                result = aqi_conversion.to_iaqi(aqi_conversion.POLLUTANT_PM25, sensor['pm2_5_atm'], algo=aqi_conversion.ALGO_EPA)
+                print('')
+                print(result)
+                result = aqi_conversion.to_aqi([
+                    (aqi_conversion.POLLUTANT_PM25, sensor['p_2_5_um']),
+                    (aqi_conversion.POLLUTANT_PM10, sensor['pm1_0_atm']),
+                ])
+                print(result)
+                """
+                #print(my_ugm3_to_us_epa_aqi(sensor['p_2_5_um']))
+                aqis['purpleair_' + sensor['Label']] = my_ugm3_to_us_epa_aqi(sensor['p_2_5_um'])
+                #print('')
+        except Exception as error:
+            print('PurpleAir exception')
+            print(error)
+
+
+        max_aqi = -1
+        for aqi_source in aqis:
+            print(aqi_source)
+            print(datetime.datetime.now())
+            aqi = aqis[aqi_source]
+            max_aqi = max(max_aqi, aqi)
+            print(aqi)
+            level_info = aqi_rating(aqi)
+            print(level_info)
+        level_info = aqi_rating(max_aqi)
+
+        # TODO handle lookup failure, where max_aqi == -1
+        """
+        print('')
+        print(max_aqi)
+        level_info = aqi_rating(max_aqi)
         print(level_info)
-    level_info = aqi_rating(max_aqi)
+        print(level_info[2])
+        print(last_state)
+        """
 
-    # TODO handle lookup failure, where max_aqi == -1
-    """
-    print('')
-    print(max_aqi)
-    level_info = aqi_rating(max_aqi)
-    print(level_info)
-    print(level_info[2])
-    print(last_state)
-    """
-
-    current_state = level_info[2]
-    if last_state != current_state:
-        # notify
-        description1, description2 = (level_info[3], level_info[4])  # TODO color
-        message = "AQI %d %s - %s. %s" % (max_aqi, current_state, description1, description2)
-        print('*' * 65)
-        print(message)
-        # TODO catch exceptions and ignore?
-        if config['mqtt']:
-            mqtt_message = message
-            publish.single(config['mqtt']['mqtt_topic'], mqtt_message, hostname=config['mqtt']['mqtt_broker'], port=config['mqtt']['mqtt_port'])
+        current_state = level_info[2]
+        if last_state != current_state:
+            # notify
+            description1, description2 = (level_info[3], level_info[4])  # TODO color
+            message = "AQI %d %s - %s. %s" % (max_aqi, current_state, description1, description2)
+            print('*' * 65)
+            print(message)
+            # TODO catch exceptions and ignore?
+            if config['mqtt']:
+                mqtt_message = message
+                publish.single(config['mqtt']['mqtt_topic'], mqtt_message, hostname=config['mqtt']['mqtt_broker'], port=config['mqtt']['mqtt_port'])
 
 
-    last_state = current_state
-    time.sleep(config['sleep_period'])
+        last_state = current_state
+        time.sleep(config['sleep_period'])
 
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
