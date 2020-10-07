@@ -197,6 +197,7 @@ def main(argv=None):
             level_info = aqi_rating(aqi)
             print(level_info)
         level_info = aqi_rating(max_aqi)
+        # save last_aqi and compare?
 
         # TODO handle lookup failure, where max_aqi == -1
         """
@@ -210,6 +211,7 @@ def main(argv=None):
 
         current_state = level_info[2]
         if last_state != current_state:
+            # TODO show whether improvement/deteriorated in notification?
             # notify
             description1, description2 = (level_info[3], level_info[4])  # TODO color
             message = "AQI %d %s - %s. %s" % (max_aqi, current_state, description1, description2)
