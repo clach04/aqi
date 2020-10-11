@@ -215,6 +215,8 @@ def main(argv=None):
             # notify
             description1, description2 = (level_info[3], level_info[4])  # TODO color
             message = "AQI %d %s - %s. %s" % (max_aqi, current_state, description1, description2)
+            # TODO use format string - then loop through config for topic and format for that topic
+            #   'AQI {max_aqi} {current_state} - {description1}. {description2}'.format(**locals())
             print('*' * 65)
             print(message)
             # TODO catch exceptions and ignore?
