@@ -47,6 +47,7 @@ aqi_levels = [
 ]
 
 def aqi_rating(aqi):
+    aqi = int(aqi)  # aqi_levels uses integers, comparisons below assume descrete values
     for level in aqi_levels[:-1]:
         min_aqi, max_aqi = level[0], level[1]
         if min_aqi <= aqi <= max_aqi:
