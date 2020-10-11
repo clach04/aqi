@@ -54,7 +54,8 @@ def aqi_rating(aqi):
     return aqi_levels[-1]  # catch any case not covered by the check, so too small or too large
 
 def my_ugm3_to_us_epa_aqi(pm25):
-    # modified constants, Slide 11 https://www.epa.gov/sites/production/files/2014-05/documents/zell-aqi.pdf
+    # laltest constants from 2012? https://www.epa.gov/sites/production/files/2016-04/documents/2012_aqi_factsheet.pdf
+    # not older 1999 constants, Slide 11 https://www.epa.gov/sites/production/files/2014-05/documents/zell-aqi.pdf
     # ug/m3         US EPA       AQI Category
     pm1 = 0;         aqi1 = 0;    # Good
     pm2 = 12;        aqi2 = 50;   # Moderate
